@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using EntityTestFramework.ExpressionHelpers;
 using Microsoft.Data.Entity;
 
 namespace EntityTestFramework
@@ -26,6 +28,35 @@ namespace EntityTestFramework
         public void Setup<TU>(Expression<Func<T, DbSet<TU>>> property) where TU : class, new()
         {
             Setup(property, new List<TU>());
+        }
+        public void HasBeenSaved<TU>(Expression<Func<TU, bool>> assertions) where TU : class
+        {
+            var exactResults = GetStoredEntities<TU>();
+            ExpressionAnalyser.CheckMessagesMatch(exactResults, assertions);
+        }
+
+        public void HasNotBeenSaved<TU>(Expression<Func<TU, bool>> assertions) where TU : class
+        {
+            var results = GetStoredEntities<TU>();
+            ExpressionAnalyser.CheckMessagesDoNotMatch(results, assertions);
+        }
+
+        public void HasBeenDeleted<TU>(Expression<Func<TU, bool>> assertions) where TU : class
+        {
+            var results = GetStoredEntities<TU>();
+            ExpressionAnalyser.CheckMessagesDoNotMatch(results, assertions);
+        }
+
+        private List<TU> GetStoredEntities<TU>() where TU : class
+        {
+            if (!_data.ContainsKey(typeof(TU)))
+            {
+                throw new Exception();
+            }
+
+            var fakeDbSet = _data[typeof(TU)] as FakeDbSet<TU>;
+
+            return fakeDbSet.ToList();
         }
 
         public void Setup<TU>(Expression<Func<T, DbSet<TU>>> property, List<TU> seed) where TU : class, new()

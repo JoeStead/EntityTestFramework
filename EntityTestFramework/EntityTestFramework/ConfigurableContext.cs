@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -18,11 +19,11 @@ namespace EntityTestFramework
         {
             _data = new Dictionary<Type, object>();
 
-            Context = OverrideSaveMethod();
+            Context = CreateContextInstanceWithFakeSaveMethod();
             configuration.Invoke(this);
         }
 
-        private T OverrideSaveMethod()
+        private T CreateContextInstanceWithFakeSaveMethod()
         {
             const string name = nameof(ConfigurableContext<T>);
             var asn = new AssemblyName(name);
@@ -31,22 +32,20 @@ namespace EntityTestFramework
 
             var genericType = typeof(T);
 
-            var typeBuilder = moduleBuilder.DefineType(genericType.Name, genericType.Attributes, typeof(T));
+            var typeBuilder = moduleBuilder.DefineType(genericType.Name + "Fake", genericType.Attributes, genericType);
 
             var saveChangesSig = typeBuilder.DefineMethod("SaveChanges",
-                   MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot |
-                   MethodAttributes.HideBySig, typeof(int), Type.EmptyTypes);
+                   MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes);
 
             var gen = saveChangesSig.GetILGenerator();
 
-            gen.Emit(OpCodes.Ldind_I4, 0);
-            gen.Emit(OpCodes.Ldloc_0);
+            gen.Emit(OpCodes.Ldc_I4_0);
             gen.Emit(OpCodes.Ret);
 
             typeBuilder.DefineMethodOverride(saveChangesSig, genericType.GetMethod("SaveChanges", new Type[0]));
-            var t = typeBuilder.CreateType();
+            var newContextType = typeBuilder.CreateType();
 
-            return (T)Activator.CreateInstance(t);
+            return (T)Activator.CreateInstance(newContextType);
         }
 
 

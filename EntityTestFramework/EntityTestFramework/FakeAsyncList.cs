@@ -9,7 +9,7 @@ using Microsoft.Data.Entity.Query;
 
 namespace EntityTestFramework
 {
-    public class FakeAsyncList<T> :  IQueryable, IQueryProvider
+    public class FakeAsyncList<T> : IQueryable, IQueryProvider
     {
         public List<T> SourceList { get; }
 
@@ -20,12 +20,16 @@ namespace EntityTestFramework
 
         public IQueryable CreateQuery(Expression expression)
         {
-            throw new NotImplementedException();
+            var result = GetListFromExpression<object>(expression);
+
+            return result.AsQueryable();
         }
 
         public IQueryable<TResult> CreateQuery<TResult>(Expression expression)
         {
-            throw new NotImplementedException();
+            var result = GetListFromExpression<TResult>(expression);
+
+            return result.AsQueryable();
         }
 
         public object Execute(Expression expression)
@@ -42,12 +46,18 @@ namespace EntityTestFramework
 
         public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression expression)
         {
+            var syncResult = GetListFromExpression<TResult>(expression);
+
+            return syncResult.ToAsyncEnumerable();
+        }
+
+        private IEnumerable<TResult> GetListFromExpression<TResult>(Expression expression)
+        {
             var lambda = Expression.Lambda(expression, Expression.Parameter(typeof(List<T>)));
             var x = lambda.Compile();
             var objResult = x.DynamicInvoke(SourceList);
-            var syncResult = (List<TResult>)objResult;
-
-            return syncResult.ToAsyncEnumerable();
+            var syncResult = (IEnumerable<TResult>)objResult;
+            return syncResult;
         }
 
         public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)

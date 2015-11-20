@@ -9,7 +9,7 @@ using Microsoft.Data.Entity.Query;
 
 namespace EntityTestFramework
 {
-    public class FakeAsyncList<T> : IEntityQueryProvider, IQueryable, IQueryProvider
+    public class FakeAsyncList<T> :  IQueryable, IQueryProvider
     {
         public List<T> SourceList { get; }
 

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace EntityTestFramework.ExpressionHelpers
 {
-    public static class ExpressionAnalyser
+    internal static class ExpressionAnalyser
     {
         private static string GetAssertionString(Expression expression)
         {

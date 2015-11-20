@@ -10,7 +10,10 @@ namespace EntityTestFramework
 {
     public class FakeDbSet<T> : DbSet<T>, IEnumerable<T>, IQueryable where T : class
     {
-        private readonly FakeAsyncList<T> _data;
+
+        public readonly FakeAsyncList<T> _data;
+
+        public List<T> Entities => _data.SourceList;
 
         public FakeDbSet(List<T> data)
         {

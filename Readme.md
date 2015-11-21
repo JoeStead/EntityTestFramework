@@ -1,4 +1,5 @@
 # Entity Test Framework (Sorry for a terrible name...)
+[![Build status](https://ci.appveyor.com/api/projects/status/56vpe1r766l4ofxe?svg=true)](https://ci.appveyor.com/project/JoeStead/entitytestframework)
 
 Entity Test Framework is a lightweight wrapper to sit around Entity Framework 7.
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using EntityTestFramework.Exceptions;
 
 namespace EntityTestFramework.ExpressionHelpers
 {
@@ -17,7 +18,7 @@ namespace EntityTestFramework.ExpressionHelpers
 
             var left = binaryExpression.Left as MemberExpression;
 
-            return $"{left.Member.Name} {binaryExpression.NodeType} \"{GetExpressionValue(binaryExpression.Right)}\"";
+            return $"{left?.Member.Name ?? "Unknown Expression"} {binaryExpression.NodeType} \"{GetExpressionValue(binaryExpression.Right)}\"";
         }
 
         private static object GetExpressionValue(Expression expression)
@@ -63,7 +64,7 @@ namespace EntityTestFramework.ExpressionHelpers
                     sb.AppendLine(GetAssertionString(err));
                 }
 
-                throw new Exception(sb.ToString());
+                throw new EntitiesMatchedException(sb.ToString());
             }
         }
 
@@ -81,7 +82,7 @@ namespace EntityTestFramework.ExpressionHelpers
 
                     if (!messageList.Any())
                     {
-                        throw new Exception($"No {typeof (T).Name} found where {GetAssertionString(binaryCheck.Body)}");
+                        throw new NoEntitiesMatchedException($"No {typeof (T).Name} found where {GetAssertionString(binaryCheck.Body)}");
                     }
                 }
             }

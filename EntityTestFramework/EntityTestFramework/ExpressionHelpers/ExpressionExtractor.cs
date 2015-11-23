@@ -46,10 +46,8 @@ namespace EntityTestFramework.ExpressionHelpers
 
             protected override Expression VisitBinary(BinaryExpression node)
             {
-                if (node.NodeType == ExpressionType.And
-                    || node.NodeType == ExpressionType.AndAlso
-                    || node.NodeType == ExpressionType.Or
-                    || node.NodeType == ExpressionType.ExclusiveOr)
+                if ( node.NodeType == ExpressionType.AndAlso
+                    || node.NodeType == ExpressionType.OrElse)
                 {
                     var left = Visit(node.Left);
                     var right = Visit(node.Right);

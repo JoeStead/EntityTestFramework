@@ -13,7 +13,5 @@ namespace EntityTestFramework.Tests.TestHelpers
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public DateTime SomeDate { get; set; }
-        public string SomeStringValue { get; set; }
     }
 }

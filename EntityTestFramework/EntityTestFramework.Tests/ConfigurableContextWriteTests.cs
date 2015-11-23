@@ -5,7 +5,7 @@ using Xunit;
 namespace EntityTestFramework.Tests
 {
     //todo use AutoFixture
-    public class ConfigurableContextWriteTests
+    public class ConfigurableContextSynchronousWriteTests
     {
         [Fact]
         public void Can_verify_new_entity_has_been_saved_with_correct_properties()
@@ -29,7 +29,21 @@ namespace EntityTestFramework.Tests
         [Fact]
         public void Can_verify_updated_entity_has_been_saved_with_modified_properties()
         {
+            var testRecord = new TestRecord
+            {
+                Id = 1,
+                Name = "Anything"
+            };
+            var testContext = new ConfigurableContext<TestDbContext>(ctx =>
+            {
+                ctx.Setup(x => x.TestRecords, testRecord);
+            });
 
+            var dbOperationHelper = new DbOperationsHelper(testContext);
+
+            dbOperationHelper.UpdateTestRecordName(1, "Joe");
+
+            testContext.HasBeenSaved<TestRecord>(x => x.Name == "Joe");
         }
 
         [Fact]
@@ -69,5 +83,26 @@ namespace EntityTestFramework.Tests
 
             testContext.HasNotBeenSaved<TestRecord>(x => x.Id == 1 && x.Name == "Anything");
         }
+
+        [Fact]
+        public void Can_remove_existing_entity()
+        {
+            var testRecord = new TestRecord
+            {
+                Id = 1,
+                Name = "Anything"
+            };
+            var testContext = new ConfigurableContext<TestDbContext>(ctx =>
+            {
+                ctx.Setup(x => x.TestRecords, testRecord);
+            });
+
+            var dbOperationHelper = new DbOperationsHelper(testContext);
+
+            dbOperationHelper.RemoveTestRecord(1);
+
+            testContext.HasNotBeenSaved<TestRecord>(x => x.Id == 1);
+        }
+        //todo range operations
     }
 }

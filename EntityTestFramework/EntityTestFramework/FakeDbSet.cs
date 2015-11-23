@@ -8,12 +8,12 @@ using Microsoft.Data.Entity.ChangeTracking;
 
 namespace EntityTestFramework
 {
-    public class FakeDbSet<T> : DbSet<T>, IEnumerable<T>, IQueryable where T : class
+    public class FakeDbSet<T> : DbSet<T>, IEnumerable<T>, IQueryable, IAsyncEnumerable<T> where T : class
     {
 
-        public readonly FakeAsyncList<T> _data;
+        private readonly FakeAsyncList<T> _data;
 
-        public List<T> Entities => _data.SourceList;
+        public List<T> Entities => _data.Source;
 
         public FakeDbSet(List<T> data)
         {
@@ -22,23 +22,23 @@ namespace EntityTestFramework
 
         public override EntityEntry<T> Add(T entity, GraphBehavior behavior = GraphBehavior.IncludeDependents)
         {
-            _data.SourceList.Add(entity);
+            _data.Source.Add(entity);
             return null;
         }
 
         public override void AddRange(IEnumerable<T> entities, GraphBehavior behavior = GraphBehavior.IncludeDependents)
         {
-            _data.SourceList.AddRange(entities);
+            _data.Source.AddRange(entities);
         }
 
         public override void AddRange(params T[] entities)
         {
-            _data.SourceList.AddRange(entities);
+            _data.Source.AddRange(entities);
         }
 
         public override EntityEntry<T> Remove(T entity)
         {
-            _data.SourceList.Remove(entity);
+            _data.Source.Remove(entity);
 
             return null;
         }
@@ -47,7 +47,7 @@ namespace EntityTestFramework
         {
             foreach (var entity in entities)
             {
-                _data.SourceList.Remove(entity);
+                _data.Source.Remove(entity);
             }
         }
 
@@ -55,8 +55,31 @@ namespace EntityTestFramework
         {
             foreach (var entity in entities)
             {
-                _data.SourceList.Remove(entity);
+                _data.Source.Remove(entity);
             }
+        }
+
+        public override EntityEntry<T> Update(T entity, GraphBehavior behavior = GraphBehavior.IncludeDependents)
+        {
+            _data.Source.Remove(entity);
+            _data.Source.Add(entity);
+            return null;
+        }
+
+        public override void UpdateRange(IEnumerable<T> entities, GraphBehavior behavior = GraphBehavior.IncludeDependents)
+        {
+            var entitiyArray = entities.ToArray();
+            foreach (var entity in entitiyArray)
+            {
+                _data.Source.Remove(entity);
+            }
+
+            _data.Source.AddRange(entitiyArray);
+        }
+
+        public override void UpdateRange(params T[] entities)
+        {
+            UpdateRange(entities.AsEnumerable());
         }
 
         Type IQueryable.ElementType => _data.ElementType;
@@ -67,7 +90,12 @@ namespace EntityTestFramework
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _data.SourceList.GetEnumerator();
+            return _data.Source.GetEnumerator();
+        }
+
+        public IAsyncEnumerator<T> GetEnumerator()
+        {
+            return _data.Source.ToAsyncEnumerable().GetEnumerator();
         }
     }
 }

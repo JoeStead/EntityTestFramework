@@ -20,7 +20,7 @@ namespace EntityTestFramework
         {
             _data = new Dictionary<Type, object>();
 
-            _context = CreateContextInstanceWithFakeSaveMethod();
+            _context = CreateContextInstanceWithFakeSaveMethod()
             configuration.Invoke(this);
         }
 
@@ -35,8 +35,21 @@ namespace EntityTestFramework
 
             var typeBuilder = moduleBuilder.DefineType(genericType.Name + "Fake", genericType.Attributes, genericType);
 
+            CreateDefaultSaveChangesMethod(typeBuilder, genericType);
+            //CreateParameterSaveChangesMethod(typeBuilder, genericType);
+            //CreateAsyncSaveChangesMethod(typeBuilder, genericType);
+            //CreateAsyncSaveChangesParameterMethod(typeBuilder, genericType);
+
+
+            var newContextType = typeBuilder.CreateType();
+
+            return (T)Activator.CreateInstance(newContextType);
+        }
+
+        private static void CreateDefaultSaveChangesMethod(TypeBuilder typeBuilder, Type genericType)
+        {
             var saveChangesSig = typeBuilder.DefineMethod("SaveChanges",
-                   MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes);
+                MethodAttributes.Public | MethodAttributes.Virtual, typeof (int), Type.EmptyTypes);
 
             var gen = saveChangesSig.GetILGenerator();
 
@@ -44,9 +57,6 @@ namespace EntityTestFramework
             gen.Emit(OpCodes.Ret);
 
             typeBuilder.DefineMethodOverride(saveChangesSig, genericType.GetMethod("SaveChanges", new Type[0]));
-            var newContextType = typeBuilder.CreateType();
-
-            return (T)Activator.CreateInstance(newContextType);
         }
 
 

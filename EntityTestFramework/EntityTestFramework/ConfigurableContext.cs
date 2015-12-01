@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using EntityTestFramework.Exceptions;
 using EntityTestFramework.ExpressionHelpers;
 using Microsoft.Data.Entity;
 
@@ -12,14 +13,14 @@ namespace EntityTestFramework
 {
     public class ConfigurableContext<T> where T : DbContext, new()
     {
-        public readonly T Context;
+        private readonly T _context;
         private readonly Dictionary<Type, object> _data;
 
         public ConfigurableContext(Action<ConfigurableContext<T>> configuration)
         {
             _data = new Dictionary<Type, object>();
 
-            Context = CreateContextInstanceWithFakeSaveMethod();
+            _context = CreateContextInstanceWithFakeSaveMethod()
             configuration.Invoke(this);
         }
 
@@ -34,8 +35,21 @@ namespace EntityTestFramework
 
             var typeBuilder = moduleBuilder.DefineType(genericType.Name + "Fake", genericType.Attributes, genericType);
 
+            CreateDefaultSaveChangesMethod(typeBuilder, genericType);
+            //CreateParameterSaveChangesMethod(typeBuilder, genericType);
+            //CreateAsyncSaveChangesMethod(typeBuilder, genericType);
+            //CreateAsyncSaveChangesParameterMethod(typeBuilder, genericType);
+
+
+            var newContextType = typeBuilder.CreateType();
+
+            return (T)Activator.CreateInstance(newContextType);
+        }
+
+        private static void CreateDefaultSaveChangesMethod(TypeBuilder typeBuilder, Type genericType)
+        {
             var saveChangesSig = typeBuilder.DefineMethod("SaveChanges",
-                   MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes);
+                MethodAttributes.Public | MethodAttributes.Virtual, typeof (int), Type.EmptyTypes);
 
             var gen = saveChangesSig.GetILGenerator();
 
@@ -43,15 +57,12 @@ namespace EntityTestFramework
             gen.Emit(OpCodes.Ret);
 
             typeBuilder.DefineMethodOverride(saveChangesSig, genericType.GetMethod("SaveChanges", new Type[0]));
-            var newContextType = typeBuilder.CreateType();
-
-            return (T)Activator.CreateInstance(newContextType);
         }
 
 
         public static implicit operator T(ConfigurableContext<T> configurableContext)
         {
-            return configurableContext.Context;
+            return configurableContext._context;
         }
 
         public void Setup<TU>(Expression<Func<T, DbSet<TU>>> property) where TU : class, new()
@@ -71,13 +82,8 @@ namespace EntityTestFramework
 
             var fakeDbSet = new FakeDbSet<TU>(seed);
 
-            if (_data.ContainsKey(typeof(TU)))
-            {
-                _data.Remove(typeof(TU));
-            }
-
             _data.Add(typeof(TU), fakeDbSet);
-            propertyInfo.SetValue(Context, fakeDbSet);
+            propertyInfo.SetValue(_context, fakeDbSet);
         }
 
         public void HasBeenSaved<TU>(Expression<Func<TU, bool>> assertions) where TU : class
@@ -97,7 +103,7 @@ namespace EntityTestFramework
             var results = GetStoredEntities<TU>();
             if (results.Any())
             {
-                throw new Exception($"Entities of type {typeof(TU).Name} have been saved");
+                throw new EntitiesSavedException($"Entities of type {typeof(TU).Name} have been saved");
             }
         }
 
